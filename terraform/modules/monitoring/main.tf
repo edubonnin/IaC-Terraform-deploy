@@ -1,3 +1,5 @@
+# modules/monitoring/main.tf
+
 resource "docker_image" "prometheus" {
   name = "prom/prometheus:latest"
 }
@@ -17,7 +19,8 @@ resource "docker_container" "prometheus" {
   }
 
   networks_advanced {
-    name = var.network_name
+    name    = var.network_name
+    aliases = ["prometheus"]
   }
 }
 
@@ -32,6 +35,23 @@ resource "docker_container" "grafana" {
   ports {
     internal = 3000
     external = var.grafana_port
+  }
+
+  volumes {
+    volume_name    = "vol_grafana"
+    container_path = "/var/lib/grafana"
+  }
+
+  # Montaje de la carpeta de provisioning
+  volumes {
+    host_path      = abspath("${path.module}/grafana/provisioning")
+    container_path = "/etc/grafana/provisioning"
+  }
+
+  # Montaje los dashboards
+  volumes {
+    host_path      = abspath("${path.module}/grafana/dashboards")
+    container_path = "/var/lib/grafana/dashboards"
   }
 
   networks_advanced {
@@ -77,6 +97,7 @@ resource "docker_container" "cadvisor" {
   }
 
   networks_advanced {
-    name = var.network_name
+    name    = var.network_name
+    aliases = ["cadvisor"]
   }
 }
